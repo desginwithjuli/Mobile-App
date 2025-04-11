@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Portrait</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#3B82F6',secondary:'#6B7280'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F8F8;
+            max-width: 375px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+        .upload-btn {
+            transition: transform 0.2s ease;
+        }
+        .upload-btn:active {
+            transform: scale(0.95);
+        }
+        .style-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .style-card.active {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        .before-after-slider {
+            position: relative;
+            overflow: hidden;
+        }
+        .slider-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: white;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: ew-resize;
+            z-index: 10;
+        }
+        .slider-handle::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .slider-handle i {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #3B82F6;
+            z-index: 11;
+        }
+        .after-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .after-image img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .hidden-modal {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .hidden-modal .modal-content {
+            transform: translateY(20px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Nav Bar -->
+    <nav class="fixed top-0 w-full bg-white shadow-sm z-50 px-4 py-3 flex items-center justify-between">
+        <div class="text-xl font-['Pacifico'] text-primary">logo</div>
+        <div class="flex items-center space-x-2">
+            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 cursor-pointer">
+                <i class="ri-settings-3-line text-gray-600"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-16 pb-20 px-4">
+        <!-- Upload Section -->
+        <div id="upload-section" class="flex flex-col items-center justify-center py-8">
+            <h1 class="text-2xl font-semibold mb-2">AI Portrait</h1>
+            <p class="text-gray-600 mb-8 text-center">Transform your photos into stunning black & white portraits</p>
+            
+            <div class="upload-btn w-40 h-40 rounded-full bg-primary bg-opacity-10 flex flex-col items-center justify-center mb-6 cursor-pointer border-2 border-dashed border-primary">
+                <div class="w-16 h-16 flex items-center justify-center rounded-full bg-primary text-white mb-2">
+                    <i class="ri-camera-line ri-2x"></i>
+                </div>
+                <p class="text-primary font-medium">Tap to upload</p>
+            </div>
+            
+            <div class="flex space-x-6 mb-8">
+                <div class="flex flex-col items-center cursor-pointer">
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 mb-1">
+                        <i class="ri-camera-line text-gray-700"></i>
+                    </div>
+                    <span class="text-xs text-gray-600">Camera</span>
+                </div>
+                <div class="flex flex-col items-center cursor-pointer">
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 mb-1">
+                        <i class="ri-image-line text-gray-700"></i>
+                    </div>
+                    <span class="text-xs text-gray-600">Gallery</span>
+                </div>
+            </div>
+            
+            <div class="w-full rounded-lg bg-white p-4 shadow-sm">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Recent Portraits</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="aspect-square rounded overflow-hidden shadow-sm">
+                        <img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20a%20young%20woman%20with%20short%20hair%2C%20black%20and%20white%20photography%2C%20high%20contrast%2C%20studio%20lighting%2C%20dramatic%20shadows&width=120&height=120&seq=1&orientation=squarish" alt="Portrait" class="w-full h-full object-cover">
+                    </div>
+                    <div class="aspect-square rounded overflow-hidden shadow-sm">
+                        <img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20a%20middle-aged%20man%20with%20glasses%2C%20black%20and%20white%20photography%2C%20high%20contrast%2C%20studio%20lighting%2C%20dramatic%20shadows&width=120&height=120&seq=2&orientation=squarish" alt="Portrait" class="w-full h-full object-cover">
+                    </div>
+                    <div class="aspect-square rounded overflow-hidden shadow-sm">
+                        <img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20an%20elderly%20woman%20smiling%2C%20black%20and%20white%20photography%2C%20high%20contrast%2C%20studio%20lighting%2C%20dramatic%20shadows&width=120&height=120&seq=3&orientation=squarish" alt="Portrait" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Section (Initially Hidden) -->
+        <div id="preview-section" class="hidden">
+            <div class="flex items-center justify-between mb-4">
+                <button id="back-to-upload" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 cursor-pointer">
+                    <i class="ri-arrow-left-line text-gray-600"></i>
+                </button>
+                <h2 class="text-lg font-semibold">Preview</h2>
+                <div class="w-8"></div>
+            </div>
+            
+            <!-- Style Selection -->
+            <div class="mb-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Select Style</h3>
+                <div class="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
+                    <div class="style-card active flex-shrink-0 w-20 rounded-lg overflow-hidden bg-white shadow-sm cursor-pointer">
+                        <div class="h-20 overflow-hidden">
+                            <img src="https://readdy.ai/api/search-image?query=classic%20black%20and%20white%20portrait%20photography%2C%20high%20contrast%2C%20studio%20lighting&width=80&height=80&seq=4&orientation=squarish" alt="Classic" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-2 text-center">
+                            <span class="text-xs font-medium">Classic</span>
+                        </div>
+                    </div>
+                    <div class="style-card flex-shrink-0 w-20 rounded-lg overflow-hidden bg-white shadow-sm cursor-pointer">
+                        <div class="h-20 overflow-hidden">
+                            <img src="https://readdy.ai/api/search-image?query=vintage%20retro%20portrait%20photography%2C%20grainy%20texture%2C%20film%20noir%20style&width=80&height=80&seq=5&orientation=squarish" alt="Vintage" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-2 text-center">
+                            <span class="text-xs font-medium">Vintage</span>
+                        </div>
+                    </div>
+                    <div class="style-card flex-shrink-0 w-20 rounded-lg overflow-hidden bg-white shadow-sm cursor-pointer">
+                        <div class="h-20 overflow-hidden">
+                            <img src="https://readdy.ai/api/search-image?query=cinematic%20black%20and%20white%20portrait%2C%20dramatic%20lighting%2C%20movie%20still%20aesthetic&width=80&height=80&seq=6&orientation=squarish" alt="Cinematic" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-2 text-center">
+                            <span class="text-xs font-medium">Cinematic</span>
+                        </div>
+                    </div>
+                    <div class="style-card flex-shrink-0 w-20 rounded-lg overflow-hidden bg-white shadow-sm cursor-pointer">
+                        <div class="h-20 overflow-hidden">
+                            <img src="https://readdy.ai/api/search-image?query=film%20noir%20portrait%2C%20high%20contrast%2C%20dramatic%20shadows%2C%201940s%20aesthetic&width=80&height=80&seq=7&orientation=squarish" alt="Film Noir" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-2 text-center">
+                            <span class="text-xs font-medium">Film Noir</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Before/After Preview -->
+            <div class="w-full aspect-square rounded-lg overflow-hidden shadow-md mb-6 before-after-slider">
+                <img id="original-image" src="https://readdy.ai/api/search-image?query=portrait%20of%20a%20young%20woman%20with%20long%20hair%2C%20natural%20lighting%2C%20neutral%20expression%2C%20front%20facing%2C%20high%20quality%20photograph&width=375&height=375&seq=8&orientation=squarish" alt="Original" class="w-full h-full object-cover">
+                
+                <div class="after-image">
+                    <img id="processed-image" src="https://readdy.ai/api/search-image?query=professional%20black%20and%20white%20portrait%20of%20a%20young%20woman%20with%20long%20hair%2C%20high%20contrast%2C%20studio%20lighting%2C%20dramatic%20shadows%2C%20artistic%20photography&width=375&height=375&seq=9&orientation=squarish" alt="Processed" class="object-cover">
+                </div>
+                
+                <div class="slider-handle">
+                    <i class="ri-arrow-left-right-line"></i>
+                </div>
+            </div>
+            
+            <!-- Download Options -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Download Options</h3>
+                
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-600">Resolution</span>
+                    <div class="flex bg-gray-100 rounded-full p-1">
+                        <button class="text-xs px-3 py-1 rounded-full bg-primary text-white">High</button>
+                        <button class="text-xs px-3 py-1 rounded-full text-gray-700">Medium</button>
+                        <button class="text-xs px-3 py-1 rounded-full text-gray-700">Web</button>
+                    </div>
+                </div>
+                
+                <button id="download-btn" class="w-full py-3 bg-primary text-white font-medium rounded-button flex items-center justify-center cursor-pointer">
+                    <i class="ri-download-line mr-2"></i>
+                    Download Portrait
+                </button>
+            </div>
+            
+            <!-- Share Options -->
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Share</h3>
+                <div class="flex justify-between">
+                    <div class="flex flex-col items-center cursor-pointer">
+                        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 mb-1">
+                            <i class="ri-facebook-fill text-blue-600"></i>
+                        </div>
+                        <span class="text-xs text-gray-600">Facebook</span>
+                    </div>
+                    <div class="flex flex-col items-center cursor-pointer">
+                        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-pink-100 mb-1">
+                            <i class="ri-instagram-line text-pink-600"></i>
+                        </div>
+                        <span class="text-xs text-gray-600">Instagram</span>
+                    </div>
+                    <div class="flex flex-col items-center cursor-pointer">
+                        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 mb-1">
+                            <i class="ri-twitter-x-line text-blue-800"></i>
+                        </div>
+                        <span class="text-xs text-gray-600">Twitter</span>
+                    </div>
+                    <div class="flex flex-col items-center cursor-pointer">
+                        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-green-100 mb-1">
+                            <i class="ri-whatsapp-line text-green-600"></i>
+                        </div>
+                        <span class="text-xs text-gray-600">WhatsApp</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Modal -->
+        <div id="processing-modal" class="modal hidden-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="modal-content bg-white rounded-lg p-6 w-4/5 max-w-sm">
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <h3 class="text-lg font-medium mb-2">Processing Image</h3>
+                    <p class="text-gray-600 text-center mb-4">Applying AI magic to create your portrait...</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div id="progress-bar" class="bg-primary h-2 rounded-full" style="width: 70%"></div>
+                    </div>
+                    <button id="cancel-processing" class="text-gray-500 text-sm cursor-pointer">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="modal hidden-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="modal-content bg-white rounded-lg p-6 w-4/5 max-w-sm">
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 flex items-center justify-center rounded-full bg-green-100 text-green-500 mb-4">
+                        <i class="ri-check-line ri-2x"></i>
+                    </div>
+                    <h3 class="text-lg font-medium mb-2">Success!</h3>
+                    <p class="text-gray-600 text-center mb-4">Your portrait has been saved to your gallery.</p>
+                    <button id="close-success" class="w-full py-2 bg-primary text-white font-medium rounded-button cursor-pointer">Done</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tab Bar -->
+    <div class="fixed bottom-0 w-full bg-white border-t border-gray-200 px-2 py-1 grid grid-cols-4 z-50">
+        <div class="flex flex-col items-center justify-center py-1 cursor-pointer">
+            <div class="w-6 h-6 flex items-center justify-center">
+                <i class="ri-home-5-line text-primary"></i>
+            </div>
+            <span class="text-xs text-primary">Home</span>
+        </div>
+        <div class="flex flex-col items-center justify-center py-1 cursor-pointer">
+            <div class="w-6 h-6 flex items-center justify-center">
+                <i class="ri-gallery-line text-gray-500"></i>
+            </div>
+            <span class="text-xs text-gray-500">Gallery</span>
+        </div>
+        <div class="flex flex-col items-center justify-center py-1 cursor-pointer">
+            <div class="w-6 h-6 flex items-center justify-center">
+                <i class="ri-magic-line text-gray-500"></i>
+            </div>
+            <span class="text-xs text-gray-500">Styles</span>
+        </div>
+        <div class="flex flex-col items-center justify-center py-1 cursor-pointer">
+            <div class="w-6 h-6 flex items-center justify-center">
+                <i class="ri-user-line text-gray-500"></i>
+            </div>
+            <span class="text-xs text-gray-500">Profile</span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const uploadSection = document.getElementById('upload-section');
+            const previewSection = document.getElementById('preview-section');
+            const uploadBtn = document.querySelector('.upload-btn');
+            const backToUploadBtn = document.getElementById('back-to-upload');
+            const downloadBtn = document.getElementById('download-btn');
+            const processingModal = document.getElementById('processing-modal');
+            const successModal = document.getElementById('success-modal');
+            const cancelProcessingBtn = document.getElementById('cancel-processing');
+            const closeSuccessBtn = document.getElementById('close-success');
+            const progressBar = document.getElementById('progress-bar');
+            const styleCards = document.querySelectorAll('.style-card');
+            
+            // Slider functionality
+            const sliderHandle = document.querySelector('.slider-handle');
+            const afterImage = document.querySelector('.after-image');
+            let isDragging = false;
+            
+            // Upload button click
+            uploadBtn.addEventListener('click', function() {
+                showProcessingModal();
+                
+                // Simulate processing time
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            hideProcessingModal();
+                            showPreviewSection();
+                        }, 500);
+                    }
+                }, 150);
+            });
+            
+            // Back button click
+            backToUploadBtn.addEventListener('click', function() {
+                hidePreviewSection();
+            });
+            
+            // Download button click
+            downloadBtn.addEventListener('click', function() {
+                showProcessingModal();
+                
+                // Simulate download time
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            hideProcessingModal();
+                            showSuccessModal();
+                        }, 500);
+                    }
+                }, 100);
+            });
+            
+            // Cancel processing
+            cancelProcessingBtn.addEventListener('click', function() {
+                hideProcessingModal();
+            });
+            
+            // Close success modal
+            closeSuccessBtn.addEventListener('click', function() {
+                hideSuccessModal();
+            });
+            
+            // Style card selection
+            styleCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    styleCards.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Slider drag functionality
+            sliderHandle.addEventListener('mousedown', startDrag);
+            sliderHandle.addEventListener('touchstart', startDrag);
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+            
+            function startDrag(e) {
+                isDragging = true;
+                e.preventDefault();
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const container = document.querySelector('.before-after-slider');
+                const containerRect = container.getBoundingClientRect();
+                
+                let clientX;
+                if (e.type === 'touchmove') {
+                    clientX = e.touches[0].clientX;
+                } else {
+                    clientX = e.clientX;
+                }
+                
+                const position = (clientX - containerRect.left) / containerRect.width;
+                const boundedPosition = Math.max(0, Math.min(1, position));
+                
+                afterImage.style.width = `${boundedPosition * 100}%`;
+                sliderHandle.style.left = `${boundedPosition * 100}%`;
+            }
+            
+            function endDrag() {
+                isDragging = false;
+            }
+            
+            // Helper functions
+            function showPreviewSection() {
+                uploadSection.classList.add('hidden');
+                previewSection.classList.remove('hidden');
+            }
+            
+            function hidePreviewSection() {
+                previewSection.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+            }
+            
+            function showProcessingModal() {
+                processingModal.classList.remove('hidden-modal');
+                progressBar.style.width = '0%';
+            }
+            
+            function hideProcessingModal() {
+                processingModal.classList.add('hidden-modal');
+            }
+            
+            function showSuccessModal() {
+                successModal.classList.remove('hidden-modal');
+            }
+            
+            function hideSuccessModal() {
+                successModal.classList.add('hidden-modal');
+            }
+            
+            // Initialize slider position
+            afterImage.style.width = '50%';
+        });
+    </script>
+</body>
+</html>
